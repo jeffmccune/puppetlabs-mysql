@@ -18,16 +18,22 @@
 class mysql::server(
   $root_password,
   $old_root_password = '',
-  $service_name = $mysql::params::service_name,
+  $service_name = 'UNSET',
   $package_name = 'mysql-server'
 ) inherits mysql::params {
+
+  $service_name_real = $service_name ? {
+    'UNSET' => $mysql::params::service_name,
+    default => $service_name,
+  }
+
   package{'mysql-server':
     name   => $package_name,
     ensure => present,
     notify => Service['mysqld'],
   }
   service { 'mysqld':
-    name => $service_name,
+    name   => $service_name_real,
     ensure => running,
     enable => true,
   }
@@ -35,7 +41,7 @@ class mysql::server(
   # the reason is that I need the service to be started before mods to the config
   # file which can cause a refresh
   exec{ 'mysqld-restart':
-    command => "/usr/sbin/service ${service_name} restart",
+    command => "/usr/sbin/service ${service_name_real} restart",
     refreshonly => true,
   }
   File{
